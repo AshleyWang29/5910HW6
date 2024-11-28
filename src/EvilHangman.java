@@ -39,6 +39,15 @@ public class EvilHangman {
 
 	}
 
+	public int getRandomLength(ArrayList<String> list) {
+		HashSet<Integer> lengthSet = new HashSet<>();
+		if (list == null || list.isEmpty()) {
+			return -1;
+		}
+
+		for (String word: list) {
+			lengthSet.add(word.length());
+		}
 
 		int randomIndex = new Random().nextInt(lengthSet.size());
 
