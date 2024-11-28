@@ -1,36 +1,106 @@
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.TreeSet;
 
 public class EvilHangman {
 
-    // Partition the word list into families based on guessed letters
-    public HashMap<String, ArrayList<String>> partitionWordFamilies(ArrayList<String> wordList, char guessedLetter) {
-        HashMap<String, ArrayList<String>> wordFamilies = new HashMap<>();
+	private ArrayList<String> wordList;
+	private HashSet<Character> previousGuesses;
+	private TreeSet<Character> incorrectGuesses; // behaves like a hash set, but orders the entries!
+	private Solution solution;
+	private Scanner inputScanner;
 
-        for (String word : wordList) {
-            // Generate the pattern for the current word
-            String pattern = generatePattern(word, guessedLetter);
+	public EvilHangman() {
+		this("engDictionary.txt");
+	}
 
-            // Add the word to the corresponding family
-            wordFamilies.putIfAbsent(pattern, new ArrayList<>());
-            wordFamilies.get(pattern).add(word);
-        }
+	public EvilHangman(String filename) {
+		try {
+			wordList = dictionaryToList(filename);
+		} catch (IOException e) {
+			System.out.printf(
+					"Couldn't read from the file %s. Verify that you have it in the right place and try running again.",
+					filename);
+			e.printStackTrace();
+			System.exit(0); // stop the program--no point in trying if you don't have a dictionary
+		}
 
-        return wordFamilies;
-    }
+		previousGuesses = new HashSet<>();
+		incorrectGuesses = new TreeSet<>();
 
-    // Generate a pattern for the word based on the guessed letter
-    private String generatePattern(String word, char guessedLetter) {
-        StringBuilder pattern = new StringBuilder();
+		int randomLength = getRandomLength(wordList);
 
-        for (char c : word.toCharArray()) {
-            if (c == guessedLetter) {
-                pattern.append(c);
-            } else {
-                pattern.append('_');
-            }
-        }
+		solution = new Solution(wordList, randomLength);
+		inputScanner = new Scanner(System.in);
 
-        return pattern.toString();
-    }
+	}
+
+
+		int randomIndex = new Random().nextInt(lengthSet.size());
+
+        return new ArrayList<>(lengthSet).get(randomIndex);
+	}
+
+	public void start() {
+		while (!solution.isSolved()) {
+			char guess = promptForGuess();
+			recordGuess(guess);
+		}
+		printVictory();
+	}
+
+	private char promptForGuess() {
+		while (true) {
+			System.out.println("Guess a letter.\n");
+			solution.printProgress();
+			System.out.println("Incorrect guesses:\n" + incorrectGuesses.toString());
+			String input = inputScanner.next();
+			if (input.length() != 1 || !isLowerEnglishLetter(input.charAt(0))) {
+				System.out.println("Please enter a single character in lowercase.");
+			} else if (previousGuesses.contains(input.charAt(0))) {
+				System.out.println("You've already guessed that.");
+			} else {
+				return input.charAt(0);
+			}
+		}
+
+	}
+
+	public boolean isLowerEnglishLetter(char ch) {
+		return Character.isLetter(ch) && 'a' <= ch && ch <= 'z';
+	}
+
+	public ArrayList<String> getWordList() {
+		return wordList;
+	}
+
+	private void recordGuess(char guess) {
+		previousGuesses.add(guess);
+		boolean isCorrect = solution.addGuess(guess);
+		if (!isCorrect) {
+			incorrectGuesses.add(guess);
+		}
+	}
+
+	private void printVictory() {
+		System.out.printf("Congrats! The word was %s%n", solution.getTarget());
+	}
+
+	private static ArrayList<String> dictionaryToList(String filename) throws IOException {
+		FileInputStream fs = new FileInputStream(filename);
+		Scanner scnr = new Scanner(fs);
+
+		ArrayList<String> wordList = new ArrayList<>();
+
+		while (scnr.hasNext()) {
+			wordList.add(scnr.next());
+		}
+
+		return wordList;
+	}
+
 }
